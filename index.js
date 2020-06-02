@@ -41,7 +41,7 @@ server.get("/api/users", function (req, res) {
 
 // When the client makes a POST request to /api/users:
 
-server.post("/api/users");
+server.post("/api/users", (req, res) => {});
 
 //listen for incoming requests
 const port = 8000;
