@@ -47,26 +47,40 @@ server.get("/api/users", function (req, res) {
 
 server.post("/api/users", (req, res) => {
   const user = req.body;
-  users.push(user);
 
-  if (users) {
-    res.status(201).json(users);
-  } else if (!users) {
+  if (!user.name || !user.bio) {
     res
       .status(400)
       .json({ errorMessage: "Please provide name and bio for the user." });
-  }
-
-  if (users.push(user)) {
-    res.status(201).json(users);
   } else {
-    res.status(500).json({
-      errorMessage: "There was an error while saving the user to the database",
-    });
+    try {
+      users.push(user);
+      res.status(201).json(users);
+    } catch {
+      res.status(500).json({
+        errorMessage:
+          "There was an error while saving the user to the database",
+      });
+    }
   }
 });
 
 //When the client makes a GET request to /api/users/:id:
+
+server.get("/api/users/:id", function (req, res) {
+  const { id } = req.params;
+
+  const userIndex = users.findIndex((u) => u.id == id);
+
+  if (userIndex > -1) {
+    const user = { ...users[userIndex], ...req.body };
+
+    users = [...users.slice(0, userIndex), user, ...users.slice(userIndex + 1)];
+    res.send(users);
+  } else {
+    res.status(404).send({ msg: "user not found" });
+  }
+});
 
 //When the client makes a DELETE request to /api/users/:id:
 
@@ -75,7 +89,53 @@ server.delete("/api/users/:id", function (req, res) {
 
   users = users.filter((u) => u.id !== Number(id));
 
-  res.status(200).json(users);
+  if (!id) {
+    res.status(404).json({
+      message: "The user with the specified ID does not exist.",
+    });
+  } else {
+    try {
+      res.status(200).json(users);
+    } catch {
+      res.status(500).json({ errorMessage: "The user could not be removed" });
+    }
+  }
+});
+
+// When the client makes a PUT request to /api/users/:id:
+server.put(`/api/users/:id`, function (req, res) {
+  const id = Number(req.params.id);
+  const user = req.body;
+
+  const find = users.find((u) => u.id === id);
+
+  if (!find) {
+    res.status(404).json({
+      message: "The user with the specified ID does not exist.",
+    });
+  } else if (!find.name || !find.bio) {
+    res
+      .status(400)
+      .json({ errorMessage: "Please provide name and bio for the user." });
+  } else {
+    try {
+      const updated = users.map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            name: user.name,
+            bio: user.bio,
+          };
+        } else {
+          return item;
+        }
+      });
+      users = updated;
+      res.status(200).json(users);
+    } catch {
+      res.status(500).json({ errorMessage: "The user could not be removed" });
+    }
+  }
 });
 
 //listen for incoming requests
